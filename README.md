@@ -1,14 +1,29 @@
-# 匯率換算 V1
+# 匯率換算
 
-簡約、無廣告、離線優先的旅行匯率 PWA。
+GitHub Pages / iPhone PWA 版本。功能包含：
 
-## GitHub Pages
-1. 建立 GitHub repository，例如 `exchange-rate`。
-2. 把這 6 個檔案上傳到 repository 根目錄。
-3. Settings → Pages → Deploy from a branch → `main` / `(root)` → Save。
-4. 用 Safari 開啟 GitHub Pages 網址。
-5. 分享 → 加入主畫面。
+- TWD / KRW / PHP / USD 任意兩幣別換算
+- `+ − × ÷` 計算機，可直接算旅費總額
+- 市場匯率自動更新，並把上次成功匯率存在手機
+- 離線可使用計算機與上次匯率
+- 「我的匯率」可自訂，例如 `1 USD = 58 PHP`
+- 自訂匯率會保存在瀏覽器本機，不需要網路
 
-第一次有網路開啟並成功更新匯率後，App 本體與最後一次匯率會留在手機裡；沒有網路時仍可計算。
+## 上 GitHub Pages
 
-匯率來源：Frankfurter public API。這是參考匯率；「我的匯率」可輸入你實際換匯比例。
+把這 7 個檔案全部放到 repository 根目錄：
+
+1. index.html
+2. style.css
+3. app.js
+4. service-worker.js
+5. manifest.json
+6. icon.svg
+7. README.md
+
+GitHub → Settings → Pages → Deploy from branch → main / root。
+
+網址可使用：
+`https://roni8268.github.io/exchange-rate/`
+
+第一次開啟時先讓它取得一次市場匯率。之後即使到菲律賓網路不穩，仍可使用計算機、我的匯率，以及最後一次成功儲存的市場匯率。

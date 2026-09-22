@@ -1,1 +1,29 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f7f8"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="匯率換算"><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css"><title>匯率換算</title></head><body><main class="app"><header><div><h1>匯率換算</h1><p id="status">準備中…</p></div><button id="settingsBtn" class="icon-btn">⚙︎</button></header><section class="converter"><div class="currency-card"><button class="currency-select" id="fromBtn"></button><input id="amount" inputmode="decimal" value="1000"></div><button id="swapBtn" class="swap">⇅</button><div class="currency-card"><button class="currency-select" id="toBtn"></button><div id="result" class="result">—</div></div></section><section class="rate-box"><div><span id="rateLabel">1 TWD</span><strong id="rateValue">—</strong></div><button id="modeBtn" class="mode-btn">市場匯率</button></section><section class="quick"><h2>快速換算</h2><div id="quickGrid" class="quick-grid"></div></section><footer><span id="updated">尚未更新匯率</span><button id="refreshBtn">更新匯率</button></footer></main><div id="currencyModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2>選擇幣別</h2><button class="close" data-close>×</button></div><div id="currencyList" class="currency-list"></div></div></div><div id="settingsModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2>我的匯率</h2><button class="close" data-close>×</button></div><p class="hint">輸入你實際換錢時拿到的比例。資料會儲存在手機，離線也能使用。</p><div id="customInputs"></div><button id="saveCustom" class="primary">儲存</button></div></div><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f7f5"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>匯率換算</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+<header><div><h1>匯率換算</h1><div id="status" class="status">檢查匯率中…</div></div><button id="settingsBtn" class="icon-btn" aria-label="我的匯率設定">⚙︎</button></header>
+<section class="converter card">
+  <div class="currency-row"><button id="fromBtn" class="currency-btn"></button><button id="swapBtn" class="swap">⇄</button><button id="toBtn" class="currency-btn"></button></div>
+  <div id="expression" class="expression"></div><div id="amount" class="amount">0</div>
+  <div class="equals">=</div><div id="converted" class="converted">—</div>
+  <div class="rate-line"><span id="rateText">—</span><button id="modeBtn" class="mode">市場匯率</button></div>
+</section>
+<section class="quick" id="quick"></section>
+<section class="calculator card">
+<div class="keys">
+<button data-action="clear" class="func">AC</button><button data-action="sign" class="func">±</button><button data-action="percent" class="func">%</button><button data-op="/" class="op">÷</button>
+<button data-num="7">7</button><button data-num="8">8</button><button data-num="9">9</button><button data-op="*" class="op">×</button>
+<button data-num="4">4</button><button data-num="5">5</button><button data-num="6">6</button><button data-op="-" class="op">−</button>
+<button data-num="1">1</button><button data-num="2">2</button><button data-num="3">3</button><button data-op="+" class="op">+</button>
+<button data-num="0" class="zero">0</button><button data-num=".">.</button><button data-action="equals" class="op">=</button>
+</div></section>
+<footer id="updated">匯率會自動更新；離線時使用上次成功儲存的匯率。</footer>
+</main>
+<div id="currencyModal" class="modal hidden"><div class="sheet"><button class="close" data-close="currencyModal">×</button><h2 id="currencyTitle">選擇幣別</h2><div id="currencyList"></div></div></div>
+<div id="settingsModal" class="modal hidden"><div class="sheet"><button class="close" data-close="settingsModal">×</button><h2>我的匯率</h2><p class="hint">例如：美元換菲律賓披索，你可以設定「1 USD = 58 PHP」。離線也能使用。</p><div class="custom-form"><select id="baseCustom"></select><span>=</span><input id="customRate" type="number" inputmode="decimal" min="0" step="any" placeholder="匯率"><select id="quoteCustom"></select><button id="saveCustom">儲存</button></div><div id="customList" class="custom-list"></div><button id="clearCustom" class="danger-btn">清除全部我的匯率</button></div></div>
+<script src="app.js"></script><script>if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');</script>
+</body></html>
