@@ -1,29 +1,55 @@
-const CURRENCIES={TWD:{name:'台幣',symbol:'NT$',flag:'🇹🇼'},KRW:{name:'韓元',symbol:'₩',flag:'🇰🇷'},PHP:{name:'披索',symbol:'₱',flag:'🇵🇭'},USD:{name:'美元',symbol:'US$',flag:'🇺🇸'}};
+const CURRENCIES={TWD:{name:'台幣',flag:'🇹🇼',symbol:'NT$'},KRW:{name:'韓元',flag:'🇰🇷',symbol:'₩'},PHP:{name:'披索',flag:'🇵🇭',symbol:'₱'},USD:{name:'美元',flag:'🇺🇸',symbol:'US$'}};
 const API='https://api.frankfurter.dev/v2/rates?base=USD&quotes=TWD,KRW,PHP';
-const state={from:localStorage.getItem('from')||'KRW',to:localStorage.getItem('to')||'TWD',current:'0',previous:null,operator:null,waiting:false,expression:'',rates:JSON.parse(localStorage.getItem('marketRates')||'null'),updatedAt:localStorage.getItem('ratesUpdatedAt')||'',custom:JSON.parse(localStorage.getItem('customRates')||'{}'),mode:localStorage.getItem('rateMode')||'market'};
-let choosing='from';
-const $=s=>document.querySelector(s); const $$=s=>document.querySelectorAll(s);
-function fmt(n){if(!Number.isFinite(n))return '錯誤'; if(Math.abs(n)<1e-12)n=0; return new Intl.NumberFormat('en-US',{maximumFractionDigits:8}).format(n)}
-function symbol(c){return CURRENCIES[c].symbol}
-function setCurrencies(){['baseCustom','quoteCustom'].forEach(id=>{$('#'+id).innerHTML=Object.keys(CURRENCIES).map(c=>`<option value="${c}">${CURRENCIES[c].flag} ${c} ${CURRENCIES[c].name}</option>`).join('')});$('#baseCustom').value='USD';$('#quoteCustom').value='PHP'}
+const $=id=>document.getElementById(id);
+let from='TWD',to='KRW',calc='0',storedValue=null,operator=null,waiting=false,expression='',rates={},customRates=JSON.parse(localStorage.getItem('myRates')||'{}'),rateMode='market',selecting='from';
+
+function fmt(n){if(!Number.isFinite(n))return '錯誤';return new Intl.NumberFormat('en-US',{maximumFractionDigits:6}).format(n)}
+function raw(n){return Number(String(n).replace(/,/g,''))}
 function pairKey(a,b){return `${a}_${b}`}
-function getRate(a,b){if(a===b)return 1; if(state.mode==='custom'){const d=state.custom[pairKey(a,b)];if(d)return d;const r=state.custom[pairKey(b,a)];if(r)return 1/r;return null} if(!state.rates)return null; const usd=state.rates; const ra=a==='USD'?1:usd[a]; const rb=b==='USD'?1:usd[b]; return ra&&rb?rb/ra:null}
-function render(){const from=CURRENCIES[state.from],to=CURRENCIES[state.to];$('#fromBtn').textContent=`${from.flag} ${state.from} ${from.name}`;$('#toBtn').textContent=`${to.flag} ${state.to} ${to.name}`;$('#amount').textContent=fmt(Number(state.current));$('#expression').textContent=state.expression; const rate=getRate(state.from,state.to); if(rate==null){$('#converted').textContent='—';$('#rateText').textContent=state.mode==='custom'?'尚未設定我的匯率':'尚未取得匯率'}else{$('#converted').textContent=`${symbol(state.to)}${fmt(Number(state.current)*rate)}`;$('#rateText').textContent=`1 ${state.from} = ${fmt(rate)} ${state.to}`}$('#modeBtn').textContent=state.mode==='market'?'市場匯率':'我的匯率';renderQuick();renderCustom();}
-function renderQuick(){const values={TWD:[1000,3000,5000],KRW:[10000,50000,100000],PHP:[500,1000,2000],USD:[10,50,100]}[state.from];$('#quick').innerHTML=values.map(v=>`<button data-quick="${v}">${symbol(state.from)}${fmt(v)}</button>`).join('')}
-function inputNum(v){if(state.waiting){state.current='0';state.waiting=false} if(v==='.'&&state.current.includes('.'))return; if(state.current==='0'&&v!=='.')state.current=v;else state.current+=v;render()}
-function calculate(){const a=Number(state.previous),b=Number(state.current);if(state.operator===null)return b;let r; if(state.operator==='+')r=a+b;if(state.operator==='-')r=a-b;if(state.operator==='*')r=a*b;if(state.operator==='/')r=b===0?NaN:a/b;state.current=String(r);state.previous=null;state.operator=null;state.waiting=true;state.expression='';return r}
-function setOperator(op){if(state.operator!==null&&!state.waiting)calculate();state.previous=Number(state.current);state.operator=op;state.waiting=true;state.expression=`${fmt(state.previous)} ${op==='*'?'×':op==='/'?'÷':op==='-'?'−':'+'}`;render()}
-function equals(){if(state.operator!==null)calculate();state.expression='';render()}
-$$('.keys button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.num!==undefined)inputNum(b.dataset.num);else if(b.dataset.op)setOperator(b.dataset.op);else if(b.dataset.action==='clear'){Object.assign(state,{current:'0',previous:null,operator:null,waiting:false,expression:''});render()}else if(b.dataset.action==='sign'){state.current=String(Number(state.current)*-1);render()}else if(b.dataset.action==='percent'){state.current=String(Number(state.current)/100);render()}else if(b.dataset.action==='equals')equals()}));
-$('#quick').addEventListener('click',e=>{const b=e.target.closest('[data-quick]');if(!b)return;state.current=b.dataset.quick;state.previous=null;state.operator=null;state.waiting=false;state.expression='';render()});
-$('#fromBtn').onclick=()=>openCurrency('from');$('#toBtn').onclick=()=>openCurrency('to');$('#swapBtn').onclick=()=>{[state.from,state.to]=[state.to,state.from];localStorage.setItem('from',state.from);localStorage.setItem('to',state.to);render()};
-function openCurrency(which){choosing=which;$('#currencyTitle').textContent=which==='from'?'選擇原幣別':'選擇換算幣別';$('#currencyList').innerHTML=Object.entries(CURRENCIES).map(([c,x])=>`<button class="currency-option" data-currency="${c}">${x.flag} ${c} ${x.name}</button>`).join('');$('#currencyModal').classList.remove('hidden')}
-$('#currencyList').addEventListener('click',e=>{const b=e.target.closest('[data-currency]');if(!b)return;if(choosing==='from')state.from=b.dataset.currency;else state.to=b.dataset.currency;localStorage.setItem('from',state.from);localStorage.setItem('to',state.to);$('#currencyModal').classList.add('hidden');render()});
-$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.add('hidden'));$('#settingsBtn').onclick=()=>$('#settingsModal').classList.remove('hidden');
-$('#modeBtn').onclick=()=>{state.mode=state.mode==='market'?'custom':'market';localStorage.setItem('rateMode',state.mode);render()};
-$('#saveCustom').onclick=()=>{const a=$('#baseCustom').value,b=$('#quoteCustom').value,r=Number($('#customRate').value);if(a===b||!r||r<=0){alert('請確認幣別與匯率');return}state.custom[pairKey(a,b)]=r;localStorage.setItem('customRates',JSON.stringify(state.custom));state.mode='custom';localStorage.setItem('rateMode','custom');$('#customRate').value='';render()};
-$('#customList').addEventListener('click',e=>{const b=e.target.closest('[data-delete]');if(!b)return;delete state.custom[b.dataset.delete];localStorage.setItem('customRates',JSON.stringify(state.custom));render()});$('#clearCustom').onclick=()=>{state.custom={};localStorage.setItem('customRates','{}');render()};
-function renderCustom(){const entries=Object.entries(state.custom);$('#customList').innerHTML=entries.length?entries.map(([k,v])=>{const[a,b]=k.split('_');return `<div class="custom-item"><span>1 ${a} = ${fmt(v)} ${b}</span><button class="delete" data-delete="${k}">刪除</button></div>`}).join(''):'<div class="empty">還沒有設定我的匯率</div>'}
-async function fetchRates(){try{const res=await fetch(API,{cache:'no-store'});if(!res.ok)throw new Error();const data=await res.json();const rates={USD:1};if(Array.isArray(data))data.forEach(x=>{if(x.quote&&x.rate)rates[x.quote]=x.rate});else if(data.rates)Object.assign(rates,data.rates);if(!rates.TWD||!rates.KRW||!rates.PHP)throw new Error();state.rates=rates;state.updatedAt=new Date().toISOString();localStorage.setItem('marketRates',JSON.stringify(rates));localStorage.setItem('ratesUpdatedAt',state.updatedAt);$('#status').textContent='● 線上｜匯率已更新';$('#updated').textContent='市場匯率已更新；離線時會使用上次成功儲存的匯率。';render()}catch(e){if(state.rates){$('#status').textContent='● 離線｜使用上次匯率';$('#updated').textContent=`離線模式｜上次更新：${state.updatedAt?new Date(state.updatedAt).toLocaleString('zh-TW'): '未知'}`}else{$('#status').textContent='● 離線｜尚無市場匯率';$('#updated').textContent='目前沒有網路，也沒有之前儲存的市場匯率；我的匯率仍可離線使用。'}render()}}
-window.addEventListener('online',fetchRates);window.addEventListener('keydown',e=>{if(e.key>='0'&&e.key<='9'||e.key==='.')inputNum(e.key);else if(['+','-','*','/'].includes(e.key))setOperator(e.key);else if(e.key==='Enter'||e.key==='=')equals();else if(e.key==='Escape'){Object.assign(state,{current:'0',previous:null,operator:null,waiting:false,expression:''});render()}});
-setCurrencies();render();fetchRates();
+function customRate(a,b){if(a===b)return 1;if(customRates[pairKey(a,b)]!=null)return Number(customRates[pairKey(a,b)]);if(customRates[pairKey(b,a)]!=null)return 1/Number(customRates[pairKey(b,a)]);return null}
+function marketRate(a,b){if(a===b)return 1;if(!rates.USD)return null;const usd={USD:1,...rates};if(usd[a]&&usd[b])return usd[b]/usd[a];return null}
+function getRate(a,b){return rateMode==='custom'?customRate(a,b):marketRate(a,b)}
+function symbol(c){return CURRENCIES[c].symbol}
+function currencyLabel(c){return `${CURRENCIES[c].flag} ${c} ${CURRENCIES[c].name}`}
+function render(){
+  $('fromBtn').textContent=currencyLabel(from);$('toBtn').textContent=currencyLabel(to);
+  $('expression').textContent=expression||'\u00a0';$('amount').textContent=fmt(raw(calc));
+  const r=getRate(from,to);const val=raw(calc);
+  $('converted').textContent=r==null?'—':`${symbol(to)}${fmt(val*r)}`;
+  $('rateText').textContent=r==null?`尚未設定 ${from} → ${to}`:`1 ${from} = ${fmt(r)} ${to}`;
+  $('rateModeBtn').textContent=rateMode==='market'?'市場匯率':'我的匯率';
+  renderQuick();renderSaved();
+}
+function renderQuick(){const values={TWD:[1000,3000,5000],KRW:[10000,50000,100000],PHP:[500,1000,2000],USD:[10,50,100]}[from];$('quickButtons').innerHTML=values.map(v=>`<button data-quick="${v}">${symbol(from)}${fmt(v)}</button>`).join('');document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{calc=String(b.dataset.quick);waiting=false;expression='';render()})}
+function calculate(a,b,op){a=Number(a);b=Number(b);if(op==='+')return a+b;if(op==='-')return a-b;if(op==='*')return a*b;if(op==='/')return b===0?NaN:a/b;return b}
+function press(k){
+ if(k==='clear'){calc='0';storedValue=null;operator=null;waiting=false;expression='';render();return}
+ if(k==='back'){if(waiting){calc='0';waiting=false}else{calc=calc.length>1?calc.slice(0,-1):'0';if(calc==='-0')calc='0'}render();return}
+ if(k==='sign'){calc=String(-raw(calc));render();return}
+ if(k==='%'){calc=String(raw(calc)/100);render();return}
+ if('0123456789'.includes(k)){
+   if(waiting){calc=k;waiting=false}else calc=calc==='0'?k:calc+k;render();return;
+ }
+ if(k==='.') {if(waiting){calc='0.';waiting=false}else if(!calc.includes('.'))calc+='.';render();return}
+ if(['+','-','*','/'].includes(k)){
+   if(operator&&!waiting){const result=calculate(storedValue,calc,operator);storedValue=result;calc=String(result)}else storedValue=raw(calc);
+   operator=k;waiting=true;expression=`${fmt(storedValue)} ${k==='*'?'×':k==='/'?'÷':k}`;render();return;
+ }
+ if(k==='='){
+   if(operator){const left=storedValue,right=raw(calc),result=calculate(left,right,operator);expression=`${fmt(left)} ${operator==='*'?'×':operator==='/'?'÷':operator} ${fmt(right)}`;calc=String(result);storedValue=null;operator=null;waiting=true;render();}return;
+ }
+}
+function openCurrency(which){selecting=which;$('currencyList').innerHTML=Object.keys(CURRENCIES).map(c=>`<button data-currency="${c}">${currencyLabel(c)}</button>`).join('');document.querySelectorAll('[data-currency]').forEach(b=>b.onclick=()=>{if(selecting==='from'&&b.dataset.currency===to)to=from; if(selecting==='to'&&b.dataset.currency===from)from=to; if(selecting==='from')from=b.dataset.currency;else to=b.dataset.currency;close('currencyModal');render()});$('currencyModal').classList.remove('hidden')}
+function close(id){$(id).classList.add('hidden')}
+function renderCustomSelects(){const opts=Object.keys(CURRENCIES).map(c=>`<option value="${c}">${c} ${CURRENCIES[c].name}</option>`).join('');$('customBase').innerHTML=opts;$('customQuote').innerHTML=opts;$('customBase').value='USD';$('customQuote').value='PHP'}
+function renderSaved(){const entries=Object.entries(customRates);$('savedRates').innerHTML=entries.length?entries.map(([k,v])=>{const [a,b]=k.split('_');return `<div class="saved-rate"><span>1 ${a} = ${v} ${b}</span><button data-del="${k}">刪除</button></div>`}).join(''):'<div class="hint">尚未設定我的匯率</div>';document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete customRates[b.dataset.del];localStorage.setItem('myRates',JSON.stringify(customRates));render()})}
+async function fetchRates(){try{const res=await fetch(API,{cache:'no-store'});if(!res.ok)throw new Error();const data=await res.json();const next={USD:1};if(Array.isArray(data)){data.forEach(x=>next[x.quote]=x.rate)}else if(data.rates){Object.assign(next,data.rates)}rates=next;localStorage.setItem('marketRates',JSON.stringify({rates,updatedAt:Date.now()}));$('statusDot').className='dot online';$('statusText').textContent='線上｜匯率已更新';render()}catch(e){const saved=JSON.parse(localStorage.getItem('marketRates')||'null');if(saved?.rates){rates=saved.rates;$('statusDot').className='dot offline';$('statusText').textContent='離線｜使用上次匯率';render()}else{$('statusDot').className='dot offline';$('statusText').textContent='離線｜尚無市場匯率';render()}}}
+
+document.querySelectorAll('.key').forEach(b=>b.addEventListener('click',()=>press(b.dataset.key)));
+$('fromBtn').onclick=()=>openCurrency('from');$('toBtn').onclick=()=>openCurrency('to');$('swapBtn').onclick=()=>{[from,to]=[to,from];render()};$('rateModeBtn').onclick=()=>{rateMode=rateMode==='market'?'custom':'market';render()};$('settingsBtn').onclick=()=>{$('settingsModal').classList.remove('hidden');renderCustomSelects();renderSaved()};
+$('saveRate').onclick=()=>{const a=$('customBase').value,b=$('customQuote').value,v=Number($('customRate').value);if(a===b||!v||v<=0)return;customRates[pairKey(a,b)]=v;localStorage.setItem('myRates',JSON.stringify(customRates));$('customRate').value='';rateMode='custom';render()};
+$('clearCustom').onclick=()=>{if(confirm('確定清除全部我的匯率？')){customRates={};localStorage.setItem('myRates','{}');render()}};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>close(b.dataset.close));
+document.addEventListener('keydown',e=>{const map={'Enter':'=','Escape':'clear','Backspace':'back','+':'+','-':'-','*':'*','/':'/','x':'*','X':'*','%':'%'};if(/^[0-9.]$/.test(e.key)||map[e.key]){e.preventDefault();press(map[e.key]||e.key)}});
+render();fetchRates();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
